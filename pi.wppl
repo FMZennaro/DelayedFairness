@@ -1,0 +1,86 @@
+// X: scores
+// I take the domain of the scores to be defined over [300,850]
+
+// I consider only a sub-group, say A, but I omit writing it
+
+// pi: distribution of the scores over X
+// In the paper it would be pi_A (x)
+// I take it to be a normal N(550,50), even if strictly speaking is not bounded
+
+// tau: decision threshold
+// In the paper it would be tau_A (x)
+// Since it is proved the optimal decision function is a threshold I deal with it as a single value
+// tau is a function of utility and fairness
+
+// rho: success parameter
+// In theory can be anything; for simplicity I make it a function of the score
+// I take it to be Bern(x/550) scaling x to be in [0,550]
+
+// c_pos / c_neg: social bonus or malus
+// I take this as in the paper c_pos=75 and c_neg=-150
+
+// Delta : outcome function
+// I take this as in the paper rho*c_pos + (1-rho)*c_neg 
+
+var c_pos = 75
+var c_neg = -150
+
+var options = {method:'MCMC', samples:100000}
+
+var pi_0_model = function(){gaussian(550,50)}
+var pi_0_pdf = Infer(options,pi_0_model)
+print('Original pdf pi0: ')
+viz(pi_0_pdf)
+
+var pi_1_model = function(){
+  var x0 = gaussian(550,50)
+  
+  if(x0 > tau){
+    var p0 = (x0 - 300)/550
+    var p1 = p0<0 ? 0 : p0
+    var p2 = p1>1 ? 1 : p1
+    
+    var rho = Bernoulli({p:p2}).sample()
+    if(rho==1) { return x0+c_pos }
+    else { return x0+c_neg }
+  }
+  else{ return x0 }
+}
+
+var tau = 600
+var pi_1A_model = function(){
+  var x0 = gaussian(550,50)
+  
+  if(x0 > tau){
+    var p0 = (x0 - 300)/550
+    var p1 = p0<0 ? 0 : p0
+    var p2 = p1>1 ? 1 : p1
+    
+    var rho = Bernoulli({p:p2}).sample()
+    if(rho==1) { return x0+c_pos }
+    else { return x0+c_neg }
+  }
+  else{ return x0 }
+}
+var pi_1A_pdf = Infer(options,pi_1A_model)
+print('pi1 using threshold tau=600: ')
+viz(pi_1A_pdf)
+
+var tau = 300
+var pi_1B_model = function(){
+  var x0 = gaussian(550,50)
+  
+  if(x0 > tau){
+    var p0 = (x0 - 300)/550
+    var p1 = p0<0 ? 0 : p0
+    var p2 = p1>1 ? 1 : p1
+    
+    var rho = Bernoulli({p:p2}).sample()
+    if(rho==1) { return x0+c_pos }
+    else { return x0+c_neg }
+  }
+  else{ return x0 }
+}
+var pi_1B_pdf = Infer(options,pi_1B_model)
+print('pi1 using threshold tau=300: ')
+viz(pi_1B_pdf)
